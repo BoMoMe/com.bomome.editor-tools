@@ -1,0 +1,6 @@
+{
+  "name": "Bomome.EditorTools",
+  "references": [],
+  "includePlatforms": [ "Editor" ],
+  "autoReferenced": true
+}

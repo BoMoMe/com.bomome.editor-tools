@@ -1,0 +1,8 @@
+{
+  "name": "com.bomome.editor-tools",
+  "version": "0.1.0",
+  "displayName": "Bomome Editor Tools",
+  "description": "Editor-only Android APK/AAB builds, screenshot capture, asset reference inspection and optional Firebase CLI distribution.",
+  "unity": "6000.4",
+  "author": { "name": "Bomome" }
+}
