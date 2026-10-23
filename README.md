@@ -116,6 +116,22 @@ Tests do not run builds, uploads, login, Git commits or tags. Device/build/signi
 and Firebase distribution checks require explicit project-specific validation.
 Dependency graph hints are not an authoritative APK/AAB build-content report.
 
-This beta is not yet published; consumers currently use sibling file references.
-The package lives in its own source repository. Publish it and pin a release
-revision before sharing consumers without the sibling library checkout.
+## Play-Mode Time Scale
+Unity 6.3+ automatically adds three native toolbar elements immediately after
+Play/Pause: a 0-5x slider with the actual multiplier, reset to 1x and a speed
+preset menu (0, 0.25, 0.5, 1, 1.5, 2, 3, 4 and 5x). Controls are disabled outside
+Play mode. Use the toolbar customization menu to show/reorder them if an existing
+editor layout hides them. No scene component or runtime dependency is required.
+
+The label observes actual Time.timeScale, including changes made by game pause
+or slow-motion systems; this tool does not continuously override game state.
+Changing the slider deliberately changes Time.timeScale. At 0x scaled simulation
+stops; Unity's Pause button is independent. Unscaled timers and audio are unaffected.
+Time.fixedDeltaTime is never changed. After using the controls, leaving Play mode
+resets time scale to 1x, including with domain reload disabled.
+
+The package is published at https://github.com/BoMoMe/com.bomome.editor-tools.git.
+Existing consumers should update their manifest Git revision to a published commit
+containing this feature and let Package Manager resolve it. Pinned older commits
+do not receive new tools automatically. Do not copy scripts into consumer projects
+or edit Library/PackageCache. The package currently requires Unity 6000.4.
