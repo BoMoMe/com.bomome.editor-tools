@@ -26,6 +26,7 @@ namespace Bomome.EditorTools.Build
         private static string TagFormatPrefKey => EditorToolPreferences.Key("Bomome.AndroidBuild.TagFormat");
         private static string Il2CppConfigurationPrefKey => EditorToolPreferences.Key("Bomome.AndroidBuild.Il2CppConfiguration");
         private static string FirebaseEnabledPrefKey => EditorToolPreferences.Key("Bomome.AndroidBuild.FirebaseEnabled");
+        private static string AppendSuffixPrefKey => EditorToolPreferences.Key("Bomome.AndroidBuild.AppendEnvironmentSuffix");
         private const string DevSuffix = "_dev";
         private const string StageSuffix = "_stage";
         private const string DefaultCommitMessage = "Build {env} {version} ({build})";
@@ -34,6 +35,7 @@ namespace Bomome.EditorTools.Build
         private string outputFolder;
         private BuildEnvironment buildEnvironment = BuildEnvironment.Development;
         private bool developmentBuild = true;
+        private bool appendEnvironmentSuffix = true;
         private bool connectProfiler;
         private bool autoRunPlayer;
         private Il2CppBuildConfiguration il2CppConfiguration = Il2CppBuildConfiguration.Debug;
@@ -75,6 +77,7 @@ namespace Bomome.EditorTools.Build
             AndroidBuildOptions options = AndroidBuildOptions.Default;
             options.OutputFolder = GetDefaultOutputFolder();
             options.Environment = GetSavedEnvironment();
+            options.AppendEnvironmentSuffix = EditorPrefs.GetBool(AppendSuffixPrefKey, true);
             options.Il2CppConfiguration = GetSavedIl2CppConfiguration();
             options.CommitAndTag = EditorPrefs.GetBool(CommitAndTagPrefKey, false);
             options.CommitMessageFormat = EditorPrefs.GetString(CommitMessagePrefKey, DefaultCommitMessage);
@@ -88,6 +91,7 @@ namespace Bomome.EditorTools.Build
         {
             AndroidBuildOptions options = AndroidBuildOptions.Default;
             options.OutputFolder = EditorPrefs.GetString(OutputFolderPrefKey, GetDefaultOutputFolder());
+            options.AppendEnvironmentSuffix = EditorPrefs.GetBool(AppendSuffixPrefKey, true);
             options = ApplyConfiguredSettings(options);
             // A quick store build must not silently stage changes or create a Git tag.
             BuildAndroid(CreateStoreOptions(options));
@@ -132,7 +136,7 @@ namespace Bomome.EditorTools.Build
                 SettingsService.OpenProjectSettings("Project/Bomome/Editor Tools");
             EditorGUILayout.LabelField("Android APK / Store AAB Build", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Builds Dev, Stage, or Production APKs. Temporarily applies package id suffixes and registered project build adapters, then restores temporary settings after the build.",
+                "Builds Dev, Stage, or Production APKs. Optionally applies app ID suffixes and registered project build adapters, then restores temporary settings after the build.",
                 MessageType.Info);
 
             EditorGUILayout.Space(4f);
@@ -144,8 +148,10 @@ namespace Bomome.EditorTools.Build
                 SaveSettings();
             }
 
+            appendEnvironmentSuffix = EditorGUILayout.Toggle(new GUIContent("Append Environment Suffix",
+                "Add _dev/_stage to the app ID. Turn off to keep Player Settings' exact app ID, independent of Development Build."), appendEnvironmentSuffix);
             string currentIdentifier = PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android);
-            string targetIdentifier = CreateEnvironmentIdentifier(currentIdentifier, buildEnvironment);
+            string targetIdentifier = CreateEnvironmentIdentifier(currentIdentifier, buildEnvironment, appendEnvironmentSuffix);
             string nextVersion = IncrementVersion(PlayerSettings.bundleVersion, versionIncrement);
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -240,6 +246,7 @@ namespace Bomome.EditorTools.Build
             OutputFolder = outputFolder,
             Environment = buildEnvironment,
             DevelopmentBuild = developmentBuild,
+            AppendEnvironmentSuffix = appendEnvironmentSuffix,
             ConnectProfiler = connectProfiler,
             AutoRunPlayer = autoRunPlayer,
             Il2CppConfiguration = il2CppConfiguration,
@@ -252,6 +259,7 @@ namespace Bomome.EditorTools.Build
         private void LoadSettings()
         {
             firebaseEnabled = EditorPrefs.GetBool(FirebaseEnabledPrefKey, false);
+            appendEnvironmentSuffix = EditorPrefs.GetBool(AppendSuffixPrefKey, true);
             outputFolder = EditorPrefs.GetString(OutputFolderPrefKey, GetDefaultOutputFolder());
             buildEnvironment = GetSavedEnvironment();
             developmentBuild = buildEnvironment != BuildEnvironment.Production;
@@ -266,6 +274,7 @@ namespace Bomome.EditorTools.Build
                 outputFolder = config.OutputFolder;
                 buildEnvironment = config.Environment;
                 developmentBuild = config.DevelopmentBuild;
+                appendEnvironmentSuffix = config.AppendEnvironmentSuffix;
                 connectProfiler = config.ConnectProfiler;
                 autoRunPlayer = config.AutoRunPlayer;
                 versionIncrement = (VersionIncrement)config.VersionIncrement;
@@ -283,6 +292,7 @@ namespace Bomome.EditorTools.Build
                 config.OutputFolder = outputFolder;
                 config.Environment = buildEnvironment;
                 config.DevelopmentBuild = developmentBuild;
+                config.AppendEnvironmentSuffix = appendEnvironmentSuffix;
                 config.ConnectProfiler = connectProfiler;
                 config.AutoRunPlayer = autoRunPlayer;
                 config.VersionIncrement = (ToolVersionIncrement)versionIncrement;
@@ -293,6 +303,7 @@ namespace Bomome.EditorTools.Build
             else
             {
                 EditorPrefs.SetBool(FirebaseEnabledPrefKey, firebaseEnabled);
+                EditorPrefs.SetBool(AppendSuffixPrefKey, appendEnvironmentSuffix);
                 EditorPrefs.SetString(OutputFolderPrefKey, string.IsNullOrWhiteSpace(outputFolder) ? GetDefaultOutputFolder() : outputFolder);
                 EditorPrefs.SetInt(EnvironmentPrefKey, (int)buildEnvironment);
                 EditorPrefs.SetInt(Il2CppConfigurationPrefKey, (int)il2CppConfiguration);
@@ -309,6 +320,7 @@ namespace Bomome.EditorTools.Build
             options.OutputFolder = config.OutputFolder;
             options.Environment = config.Environment;
             options.DevelopmentBuild = config.DevelopmentBuild;
+            options.AppendEnvironmentSuffix = config.AppendEnvironmentSuffix;
             options.ConnectProfiler = config.ConnectProfiler;
             options.AutoRunPlayer = config.AutoRunPlayer;
             options.VersionIncrementMode = (VersionIncrement)config.VersionIncrement;
@@ -380,7 +392,7 @@ namespace Bomome.EditorTools.Build
             string originalIl2CppArgs = null;
             string nextVersion = IncrementVersion(PlayerSettings.bundleVersion, options.VersionIncrementMode);
             int nextBuildNumber = Mathf.Max(1, PlayerSettings.Android.bundleVersionCode + 1);
-            string buildIdentifier = CreateEnvironmentIdentifier(originalIdentifier, options.Environment);
+            string buildIdentifier = CreateEnvironmentIdentifier(originalIdentifier, options.Environment, options.AppendEnvironmentSuffix);
             string outputFolder = string.IsNullOrWhiteSpace(options.OutputFolder) ? GetDefaultOutputFolder() : options.OutputFolder;
             outputFolder = EditorToolsProjectSettings.ResolveOutputFolder(outputFolder, GetDefaultOutputFolder());
             string fileName = CreateApkName(PlayerSettings.productName, nextVersion, options.Environment);
@@ -568,8 +580,9 @@ namespace Bomome.EditorTools.Build
             return parts;
         }
 
-        private static string CreateEnvironmentIdentifier(string identifier, BuildEnvironment environment)
+        private static string CreateEnvironmentIdentifier(string identifier, BuildEnvironment environment, bool appendSuffix)
         {
+            if (!appendSuffix) return identifier;
             string baseIdentifier = RemoveEnvironmentSuffix(identifier);
             if (string.IsNullOrWhiteSpace(identifier))
             {
@@ -876,6 +889,7 @@ namespace Bomome.EditorTools.Build
             public string OutputFolder;
             public BuildEnvironment Environment;
             public bool DevelopmentBuild;
+            public bool AppendEnvironmentSuffix;
             public bool ConnectProfiler;
             public bool AutoRunPlayer;
             public bool StoreBundle;
@@ -890,6 +904,7 @@ namespace Bomome.EditorTools.Build
                 OutputFolder = GetDefaultOutputFolder(),
                 Environment = BuildEnvironment.Development,
                 DevelopmentBuild = true,
+                AppendEnvironmentSuffix = true,
                 ConnectProfiler = false,
                 AutoRunPlayer = false,
                 Il2CppConfiguration = Il2CppBuildConfiguration.Debug,

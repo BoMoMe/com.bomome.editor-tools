@@ -64,10 +64,12 @@ namespace Bomome.EditorTools.Tests
                 settings.Environment = BuildEnvironment.Stage;
                 settings.VersionIncrement = ToolVersionIncrement.None;
                 settings.AutoRunPlayer = true;
+                settings.AppendEnvironmentSuffix = false;
                 registry.AndroidBuild = settings;
                 window = ScriptableObject.CreateInstance<AndroidDevBuildWindow>();
                 const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
                 Assert.AreEqual(settings.OutputFolder, typeof(AndroidDevBuildWindow).GetField("outputFolder", instance).GetValue(window));
+                Assert.AreEqual(false, typeof(AndroidDevBuildWindow).GetField("appendEnvironmentSuffix", instance).GetValue(window));
                 var optionsType = typeof(AndroidDevBuildWindow).GetNestedType("AndroidBuildOptions", BindingFlags.NonPublic);
                 var options = optionsType.GetProperty("Default").GetValue(null);
                 options = typeof(AndroidDevBuildWindow).GetMethod("ApplyConfiguredSettings", BindingFlags.Static | BindingFlags.NonPublic)
@@ -75,6 +77,7 @@ namespace Bomome.EditorTools.Tests
                 Assert.AreEqual(settings.OutputFolder, optionsType.GetField("OutputFolder").GetValue(options));
                 Assert.AreEqual(BuildEnvironment.Stage, optionsType.GetField("Environment").GetValue(options));
                 Assert.AreEqual(true, optionsType.GetField("AutoRunPlayer").GetValue(options));
+                Assert.AreEqual(false, optionsType.GetField("AppendEnvironmentSuffix").GetValue(options));
                 Assert.AreEqual("None", optionsType.GetField("VersionIncrementMode").GetValue(options).ToString());
             }
             finally

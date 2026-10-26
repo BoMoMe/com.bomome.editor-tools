@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- Add Append Environment Suffix to Android build settings and the build window.
+  All build entry points can preserve the exact Player Settings application ID,
+  independently of development/profiler flags. Retain existing defaults.
+
 ## 0.2.0 - 2026-10-23
 - Add native Unity 6.3+ Play-mode time-scale toolbar controls: 0-5x slider,
   live multiplier, reset and speed presets beside Play/Pause.

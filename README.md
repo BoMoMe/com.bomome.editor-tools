@@ -91,6 +91,15 @@ Commit And Tag is an explicit opt-in after a successful build. It stages the
 project repository's current changes, commits and tags; it never pushes. Review
 your working tree first. Store quick-build does not opt into Git actions.
 
+## Application ID Suffix
+Use Append Environment Suffix in the Android build window or its assigned Android
+Build Settings asset. Disable it to use the exact Android application ID in Player
+Settings for every environment. This also applies to quick APK and store AAB builds.
+It does not disable Development Build or profiler flags, and it does not remove a
+suffix already entered manually in Player Settings. With no assigned asset, this
+choice is saved in project-scoped editor preferences. Existing behavior remains
+enabled by default for compatibility.
+
 ## Project Build Adapters
 Register project-specific temporary changes with AndroidBuildHooks.Register,
 using a stable unique ID. The callback accepts BuildEnvironment and returns an

@@ -34,7 +34,28 @@ namespace Bomome.EditorTools.Tests
         [TestCase("com.example.game", BuildEnvironment.Production, "com.example.game")]
         public void EnvironmentIdentifiersDoNotStackSuffixes(string id, BuildEnvironment environment, string expected)
         {
-            Assert.AreEqual(expected, CallBuild("CreateEnvironmentIdentifier", id, environment));
+            Assert.AreEqual(expected, CallBuild("CreateEnvironmentIdentifier", id, environment, true));
+        }
+
+        [TestCase("com.example.game", BuildEnvironment.Development)]
+        [TestCase("com.example.game", BuildEnvironment.Stage)]
+        [TestCase("com.example.game_dev", BuildEnvironment.Production)]
+        [TestCase("com.example.custom", BuildEnvironment.Production)]
+        public void DisabledSuffixPreservesExactPlayerSettingsId(string id, BuildEnvironment environment)
+        {
+            Assert.AreEqual(id, CallBuild("CreateEnvironmentIdentifier", id, environment, false));
+        }
+
+        [Test]
+        public void DisablingSuffixDoesNotDisableDevelopmentFlags()
+        {
+            object options = Options();
+            Set(options, "Environment", BuildEnvironment.Development);
+            Set(options, "DevelopmentBuild", true);
+            Set(options, "ConnectProfiler", true);
+            Set(options, "AppendEnvironmentSuffix", false);
+            Assert.AreEqual(BuildOptions.Development | BuildOptions.ConnectWithProfiler,
+                CallBuild("CreateBuildOptions", options));
         }
 
         [TestCase(BuildEnvironment.Production, true, true, BuildOptions.None)]

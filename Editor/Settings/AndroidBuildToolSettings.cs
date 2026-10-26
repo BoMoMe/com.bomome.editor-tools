@@ -12,6 +12,8 @@ namespace Bomome.EditorTools
         [Tooltip("Project-relative or absolute output folder.")]
         public string OutputFolder = "Builds/Android";
         public BuildEnvironment Environment = BuildEnvironment.Development;
+        [Tooltip("Append _dev or _stage for environment-specific app IDs. Disable to keep the exact Android application ID from Player Settings. Does not change Development Build options.")]
+        public bool AppendEnvironmentSuffix = true;
         public ToolVersionIncrement VersionIncrement = ToolVersionIncrement.Patch;
         public ToolIl2CppConfiguration Il2CppConfiguration = ToolIl2CppConfiguration.Debug;
         public bool DevelopmentBuild = true;
